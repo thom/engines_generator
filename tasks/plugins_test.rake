@@ -15,6 +15,46 @@ namespace :plugins do
 
   Rake::Task['plugins:test'].comment = "Run the plugin tests and specs in vendor/plugins/** (or specify with PLUGIN=name)"
 
+  desc "Run all specs in spec directory with RCov (excluding plugin specs)"
+  Spec::Rake::SpecTask.new(:rcov) do |t|
+    t.spec_opts = ['--options', "\"#{RAILS_ROOT}/spec/spec.opts\""]
+    t.pattern = "vendor/plugins/#{ENV['PLUGIN'] || '**'}/**/*_spec.rb"
+    t.rcov = true
+    t.rcov_opts = lambda do
+      IO.readlines("#{RAILS_ROOT}/spec/rcov.opts").map {|l| l.chomp.split " "}.flatten
+    end
+  end
+
+  desc "Report code statistics (KLOCs, etc) from the plugin"
+  task :stats do
+    require 'code_statistics'
+    path = "#{RAILS_ROOT}/vendor/plugins/#{ENV['PLUGIN'] || '**'}/"
+    dirs = [
+            %w(Controllers        app/controllers),
+            %w(Helpers            app/helpers),
+            %w(Models             app/models),
+            %w(Libraries          lib/),
+            %w(APIs               app/apis),
+            %w(Components         components),
+            %w(Integration\ tests test/integration),
+            %w(Functional\ tests  test/functional),
+            %w(Unit\ tests        test/unit),
+            %w(Model\ specs       spec/models),
+            %w(View\ specs        spec/views),
+            %w(Controller\ specs  spec/controllers),
+            %w(Helper\ specs      spec/helpers),
+            %w(Library\ specs     spec/lib)
+           ].collect { |name, dir| [ name, "#{path}/#{dir}" ] }.select { |name, dir| File.directory?(dir) }
+
+    ::CodeStatistics::TEST_TYPES << "Model specs" if File.exist?(path + 'spec/models')
+    ::CodeStatistics::TEST_TYPES << "View specs" if File.exist?(path + 'spec/views')
+    ::CodeStatistics::TEST_TYPES << "Controller specs" if File.exist?(path + 'spec/controllers')
+    ::CodeStatistics::TEST_TYPES << "Helper specs" if File.exist?(path + 'spec/helpers')
+    ::CodeStatistics::TEST_TYPES << "Library specs" if File.exist?(path + 'spec/lib')
+
+    CodeStatistics.new(*dirs).to_s
+  end
+
   namespace :test do
     desc "Test all plugins in config/plugins_to_test.yml"
     task :all do
