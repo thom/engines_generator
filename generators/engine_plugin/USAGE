@@ -1,0 +1,13 @@
+NAME
+     engine_plugin - creates a directory structure and starter files for a new engine plugin
+ 
+SYNOPSIS
+     engine_plugin [plugin name]
+ 
+DESCRIPTION
+     |-- vendor
+        `-- plugins
+           `-- [plugin name]
+ 
+EXAMPLE
+     ./script/generate engine_plugin peachy
